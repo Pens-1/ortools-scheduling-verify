@@ -20,10 +20,12 @@ class PartType(Enum):
 
 
 @dataclass
-class Instructor:
-    """指導者"""
+class Player:
+    """プレイヤー（参加者）"""
     id: int
     name: str
+    parts: List[PartType]  # 所属パート（複数可）
+    is_instructor: bool = False  # 指導者かどうか
 
 
 @dataclass
@@ -48,12 +50,13 @@ class PracticeSession:
     room_id: int
     time_slot_id: int
     instructor_id: int
+    player_ids: List[int]  # 参加プレイヤーのIDリスト
 
 
 @dataclass
 class SchedulingProblem:
     """スケジューリング問題の全体設定"""
-    instructors: List[Instructor]
+    players: List[Player]  # プレイヤーリスト（指導者含む）
     rooms: List[Room]
     time_slots: List[TimeSlot]
     parts: List[PartType]
@@ -63,7 +66,19 @@ class SchedulingProblem:
         assert len(self.rooms) > 0, "部屋が設定されていません"
         assert len(self.time_slots) > 0, "時間コマが設定されていません"
         assert len(self.parts) > 0, "パートが設定されていません"
-        assert len(self.instructors) > 0, "指導者が設定されていません"
+        assert len(self.players) > 0, "プレイヤーが設定されていません"
+    
+    def get_players_by_part(self, part: PartType) -> List[Player]:
+        """指定されたパートのプレイヤーリストを取得"""
+        return [player for player in self.players if part in player.parts]
+    
+    def get_instructors_by_part(self, part: PartType) -> List[Player]:
+        """指定されたパートの指導者リストを取得"""
+        return [player for player in self.players if part in player.parts and player.is_instructor]
+    
+    def get_regular_players_by_part(self, part: PartType) -> List[Player]:
+        """指定されたパートの一般プレイヤーリストを取得"""
+        return [player for player in self.players if part in player.parts and not player.is_instructor]
 
 
 @dataclass
@@ -77,9 +92,9 @@ class SchedulingSolution:
     def get_schedule_matrix(self) -> Dict[int, Dict[int, Optional[PracticeSession]]]:
         """時間コマ×部屋のスケジュールマトリックスを返す"""
         matrix = {}
-        for time_slot in range(len(self.problem.time_slots)):  # 実際の時間コマ数
+        for time_slot in range(3):  # 時間コマ数3
             matrix[time_slot] = {}
-            for room in range(len(self.problem.rooms)):  # 実際の部屋数
+            for room in range(3):  # 部屋数3
                 matrix[time_slot][room] = None
         
         for session in self.sessions:
