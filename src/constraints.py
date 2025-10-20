@@ -29,18 +29,22 @@ class SchedulingConstraints:
     
     def add_basic_constraints(self):
         """基本的な制約条件を追加"""
-        # 1. 各パートは各時間コマに1回だけ練習する
+        # 1. 各パートは1日に1回だけ練習する（指導者がいる場合のみ）
         for part in self.problem.parts:
-            for time_slot in self.problem.time_slots:
-                sessions_in_timeslot = []
-                for room in self.problem.rooms:
+            # そのパートの全セッション（全時間コマ、全部屋）
+            all_sessions_for_part = []
+            for room in self.problem.rooms:
+                for time_slot in self.problem.time_slots:
                     for instructor in self.problem.get_instructors_by_part(part):
-                        sessions_in_timeslot.append(
+                        all_sessions_for_part.append(
                             self.session_vars[(part, room.id, time_slot.id, instructor.id)]
                         )
-                self.model.Add(sum(sessions_in_timeslot) == 1)
+            
+            # 指導者がいる場合のみ練習する（1日に1回だけ）
+            if all_sessions_for_part:
+                self.model.Add(sum(all_sessions_for_part) == 1)
         
-        # 2. 各部屋は各時間コマに最大1つのセッション
+        # 2. 各部屋は各時間コマに最大1つのセッション（1つのパートのみ練習可能）
         for room in self.problem.rooms:
             for time_slot in self.problem.time_slots:
                 sessions_in_room = []
@@ -49,17 +53,17 @@ class SchedulingConstraints:
                         sessions_in_room.append(
                             self.session_vars[(part, room.id, time_slot.id, instructor.id)]
                         )
-                self.model.Add(sum(sessions_in_room) <= 1)
+                if sessions_in_room:
+                    self.model.Add(sum(sessions_in_room) <= 1)
     
     def add_instructor_constraints(self):
         """指導者に関する制約条件を追加"""
-        # 1. 指導者は複数のパートを同時に指導できない
         for instructor in self.problem.players:
             if not instructor.is_instructor:
                 continue
                 
             for time_slot in self.problem.time_slots:
-                # その指導者がその時間コマに指導するセッション数は最大1
+                # その指導者がその時間コマに指導するセッション数
                 instructor_sessions = []
                 for part in self.problem.parts:
                     for room in self.problem.rooms:
@@ -67,43 +71,19 @@ class SchedulingConstraints:
                             instructor_sessions.append(
                                 self.session_vars[(part, room.id, time_slot.id, instructor.id)]
                             )
-                self.model.Add(sum(instructor_sessions) <= 1)
-        
-        # 2. 指導者は自分の所属パートの練習がある時間コマでは指導できない
-        for instructor in self.problem.players:
-            if not instructor.is_instructor:
-                continue
                 
-            for time_slot in self.problem.time_slots:
-                # 指導者の所属パート（複数）
-                instructor_parts = instructor.parts
-                
-                # 指導者の所属パートの練習があるかチェック
+                # その指導者の所属パートの練習数
                 own_part_sessions = []
-                for instructor_part in instructor_parts:
+                for instructor_part in instructor.parts:
                     for room in self.problem.rooms:
                         if (instructor_part, room.id, time_slot.id, instructor.id) in self.session_vars:
                             own_part_sessions.append(
                                 self.session_vars[(instructor_part, room.id, time_slot.id, instructor.id)]
                             )
                 
-                # 自分の所属パートの練習がある場合、その時間コマでは指導できない
-                if own_part_sessions:
-                    own_part_active = self.model.NewBoolVar(f"own_part_{instructor.id}_{time_slot.id}")
-                    self.model.Add(sum(own_part_sessions) >= 1).OnlyEnforceIf(own_part_active)
-                    self.model.Add(sum(own_part_sessions) == 0).OnlyEnforceIf(own_part_active.Not())
-                    
-                    # その時間コマでは指導できない
-                    instructor_sessions_in_timeslot = []
-                    for part in self.problem.parts:
-                        for room in self.problem.rooms:
-                            if (part, room.id, time_slot.id, instructor.id) in self.session_vars:
-                                instructor_sessions_in_timeslot.append(
-                                    self.session_vars[(part, room.id, time_slot.id, instructor.id)]
-                                )
-                    
-                    if instructor_sessions_in_timeslot:
-                        self.model.Add(sum(instructor_sessions_in_timeslot) == 0).OnlyEnforceIf(own_part_active)
+                # 同じ時間に指導数≤1（指導者は複数のパートを同時に指導できない）
+                if instructor_sessions:
+                    self.model.Add(sum(instructor_sessions) <= 1)
     
     def add_equality_constraints(self):
         """均等割り振りのための制約条件を追加"""

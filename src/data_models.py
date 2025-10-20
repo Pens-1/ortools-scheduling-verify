@@ -89,16 +89,16 @@ class SchedulingSolution:
     is_optimal: bool
     solve_time_seconds: float
     
-    def get_schedule_matrix(self) -> Dict[int, Dict[int, Optional[PracticeSession]]]:
-        """時間コマ×部屋のスケジュールマトリックスを返す"""
+    def get_schedule_matrix(self) -> Dict[int, Dict[int, List[PracticeSession]]]:
+        """時間コマ×部屋のスケジュールマトリックスを返す（複数セッション対応）"""
         matrix = {}
-        for time_slot in range(3):  # 時間コマ数3
+        for time_slot in range(1, 4):  # 時間コマID: 1, 2, 3
             matrix[time_slot] = {}
-            for room in range(3):  # 部屋数3
-                matrix[time_slot][room] = None
+            for room in range(1, 4):  # 部屋ID: 1, 2, 3
+                matrix[time_slot][room] = []
         
         for session in self.sessions:
-            matrix[session.time_slot_id][session.room_id] = session
+            matrix[session.time_slot_id][session.room_id].append(session)
         
         return matrix
 
