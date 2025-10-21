@@ -4,6 +4,7 @@
 from ortools.sat.python import cp_model
 from typing import List, Dict, Tuple
 from .data_models import SchedulingProblem, Player, PartType, Room, TimeSlot
+from .constants import ProblemConfig
 
 
 class SchedulingConstraints:

@@ -162,18 +162,15 @@ def create_sample_problem() -> SchedulingProblem:
     ]
     
     # 部屋定義
-    rooms = [
-        Room(id=1, name="練習室A"),
-        Room(id=2, name="練習室B"),
-        Room(id=3, name="練習室C")
-    ]
+    rooms = []
+    for i in range(1, ProblemConfig.NUM_ROOMS + 1):
+        rooms.append(Room(id=i, name=f"練習室{chr(64 + i)}"))  # A, B, C, D
     
     # 時間コマ定義
-    time_slots = [
-        TimeSlot(id=1, name="1限目"),
-        TimeSlot(id=2, name="2限目"),
-        TimeSlot(id=3, name="3限目")
-    ]
+    time_slots = []
+    num_time_slots = ProblemConfig.get_num_time_slots()
+    for i in range(1, num_time_slots + 1):
+        time_slots.append(TimeSlot(id=i, name=f"{i}限目"))
     
     # プレイヤー定義（指導者含む）
     players = [

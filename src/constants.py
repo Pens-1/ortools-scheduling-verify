@@ -20,8 +20,13 @@ class SchedulingConfig:
 # パート・部屋・時間コマ設定
 class ProblemConfig:
     """問題設定"""
-    NUM_ROOMS = 3              # 部屋数
-    NUM_TIME_SLOTS = 3         # 時間コマ数
+    NUM_ROOMS = 5              # 部屋数
     NUM_PARTS = 9              # パート数
     NUM_INSTRUCTORS = 5        # 指導者数
     NUM_GENERAL_PLAYERS = 18   # 一般プレイヤー数
+    
+    # 計算で決定される値
+    @classmethod
+    def get_num_time_slots(cls) -> int:
+        """時間コマ数を計算で決定: パート数//部屋数+1"""
+        return cls.NUM_PARTS // cls.NUM_ROOMS + 1

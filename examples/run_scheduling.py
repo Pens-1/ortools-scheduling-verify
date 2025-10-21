@@ -9,12 +9,13 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.scheduling_optimizer import SchedulingOptimizer, create_sample_problem
+from src.constants import ProblemConfig
 
 
 def main():
     """メイン実行関数"""
     print("=== 練習表作成システム ===")
-    print("部屋数: 3, コマ数: 3, パート数: 9")
+    print(f"部屋数: {ProblemConfig.NUM_ROOMS}, コマ数: {ProblemConfig.get_num_time_slots()}, パート数: {ProblemConfig.NUM_PARTS}")
     print()
     
     # サンプル問題を作成

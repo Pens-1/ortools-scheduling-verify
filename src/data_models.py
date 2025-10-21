@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 from enum import Enum
+from .constants import ProblemConfig
 
 
 class PartType(Enum):
@@ -93,13 +94,14 @@ class SchedulingSolution:
     def get_schedule_matrix(self) -> Dict[int, Dict[int, List[PracticeSession]]]:
         """時間コマ×部屋のスケジュールマトリックスを返す（複数セッション対応）"""
         matrix = {}
-        for time_slot in range(1, 4):  # 時間コマID: 1, 2, 3
+        num_time_slots = ProblemConfig.get_num_time_slots()
+        for time_slot in range(1, num_time_slots + 1):  # 時間コマID: 計算で決定
             matrix[time_slot] = {}
-            for room in range(1, 4):  # 部屋ID: 1, 2, 3
+            for room in range(1, ProblemConfig.NUM_ROOMS + 1):  # 部屋ID: 1, 2, 3, 4, 5
                 matrix[time_slot][room] = []
-        
+
         for session in self.sessions:
             matrix[session.time_slot_id][session.room_id].append(session)
-        
+
         return matrix
 
