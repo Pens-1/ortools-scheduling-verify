@@ -13,13 +13,13 @@ class SchedulingObjectives:
         self.problem = problem
         self.session_vars = session_vars
     
-    def setup_objective(self, model: cp_model.CpModel, player_priority: int = 100):
+    def setup_objective(self, model: cp_model.CpModel, equality_weight: int = 100):
         """目的関数を設定"""
-        # 均等割り振りの目的関数
-        equality_objective = self.create_equality_objective(model)
+        # 均等割り振りの目的関数（重み付き）
+        equality_objective = self.create_equality_objective(model, equality_weight)
         
-        # プレイヤー制約違反ペナルティ（優先度付き）
-        player_penalty = self.create_player_penalty(model, player_priority)
+        # プレイヤー制約違反ペナルティ（個人別優先度）
+        player_penalty = self.create_player_penalty(model)
         
         # 目的関数を設定
         if player_penalty is not None:
@@ -27,8 +27,8 @@ class SchedulingObjectives:
         else:
             model.Minimize(equality_objective)
     
-    def create_equality_objective(self, model: cp_model.CpModel):
-        """均等割り振りの目的関数を作成"""
+    def create_equality_objective(self, model: cp_model.CpModel, weight: int = 100):
+        """均等割り振りの目的関数を作成（重み付き）"""
         instructor_session_counts = []
         for instructor in self.problem.players:
             if not instructor.is_instructor:
@@ -54,19 +54,25 @@ class SchedulingObjectives:
                 model.Add(count <= max_var)
                 model.Add(count >= min_var)
             
-            return max_var - min_var
+            # 重みを適用
+            weighted_difference = model.NewIntVar(0, 10000, "weighted_equality")
+            model.Add(weighted_difference == (max_var - min_var) * weight)
+            return weighted_difference
         else:
             # 指導者が1人の場合は単純にセッション数を最大化
             return -sum(instructor_session_counts)  # 最大化のため負の値を返す
     
-    def create_player_penalty(self, model: cp_model.CpModel, priority_level: int = 100):
-        """プレイヤー制約違反ペナルティを作成（100段階の優先度）"""
+    def create_player_penalty(self, model: cp_model.CpModel):
+        """プレイヤー制約違反ペナルティを作成（個人別優先度）"""
         player_violations = []
         
         for player in self.problem.players:
             if player.is_instructor:
                 continue
                 
+            # 個人の優先度を取得（デフォルト100）
+            player_priority = getattr(player, 'overlap_priority', 100)
+            
             for time_slot in self.problem.time_slots:
                 # そのプレイヤーの所属パートの練習数
                 player_part_sessions = []
@@ -84,9 +90,9 @@ class SchedulingObjectives:
                     violation = model.NewIntVar(0, 10, f"player_violation_{player.id}_{time_slot.id}")
                     model.Add(violation >= sum(player_part_sessions) - 1)
                     
-                    # 優先度を適用（100段階）
+                    # 個人の優先度を適用
                     weighted_violation = model.NewIntVar(0, 1000, f"weighted_violation_{player.id}_{time_slot.id}")
-                    model.Add(weighted_violation == violation * priority_level)
+                    model.Add(weighted_violation == violation * player_priority)
                     player_violations.append(weighted_violation)
         
         return sum(player_violations) if player_violations else None

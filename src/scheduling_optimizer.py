@@ -20,14 +20,14 @@ class SchedulingOptimizer:
         self.constraints = SchedulingConstraints(problem)
         self.objectives = None  # 制約設定後に初期化
         
-    def solve(self, time_limit_seconds: int = 30, player_priority: int = 100) -> Optional[SchedulingSolution]:
+    def solve(self, time_limit_seconds: int = 30, equality_weight: int = 100) -> Optional[SchedulingSolution]:
         """スケジューリング問題を解く"""
         print("制約条件を設定中...")
         model = self.constraints.setup_all_constraints()
         
         print("目的関数を設定中...")
         self.objectives = SchedulingObjectives(self.problem, self.constraints.session_vars)
-        self.objectives.setup_objective(model, player_priority)
+        self.objectives.setup_objective(model, equality_weight)
         
         print("ソルバーを実行中...")
         solver = cp_model.CpSolver()
@@ -176,28 +176,31 @@ def create_sample_problem() -> SchedulingProblem:
     
     # プレイヤー定義（指導者含む）
     players = [
-        # 指導者（各パートに複数人、複数パート所属可能）
-        Player(id=1, name="田中先生", parts=[PartType.A, PartType.B], is_instructor=True),
-        Player(id=2, name="佐藤先生", parts=[PartType.B, PartType.C], is_instructor=True),
-        Player(id=3, name="鈴木先生", parts=[PartType.C, PartType.D], is_instructor=True),
-        Player(id=4, name="高橋先生", parts=[PartType.D, PartType.E], is_instructor=True),
-        Player(id=5, name="山田先生", parts=[PartType.E, PartType.F], is_instructor=True),
-        Player(id=6, name="伊藤先生", parts=[PartType.F, PartType.G]),
-        Player(id=7, name="渡辺先生", parts=[PartType.G, PartType.H]),
-        Player(id=8, name="中村先生", parts=[PartType.H, PartType.I]),
-        Player(id=9, name="小林先生", parts=[PartType.I, PartType.A]),
-        Player(id=10, name="加藤先生", parts=[PartType.A, PartType.C]),
-        Player(id=11, name="吉田先生", parts=[PartType.B, PartType.D]),
-        Player(id=12, name="山本先生", parts=[PartType.C, PartType.E]),
-        Player(id=13, name="佐々木さん", parts=[PartType.A]),
-        Player(id=14, name="松本さん", parts=[PartType.B]),
-        Player(id=15, name="井上さん", parts=[PartType.C]),
-        Player(id=16, name="木村さん", parts=[PartType.D]),
-        Player(id=17, name="林さん", parts=[PartType.E]),
-        Player(id=18, name="清水さん", parts=[PartType.F]),
-        Player(id=19, name="森さん", parts=[PartType.G]),
-        Player(id=20, name="石川さん", parts=[PartType.H]),
-        Player(id=21, name="田村さん", parts=[PartType.I]),
+        # 指導者（5人、全員2つのパートに所属）
+        Player(id=1, name="田中先生", parts=[PartType.A, PartType.B], is_instructor=True, overlap_priority=100),  # 厳格
+        Player(id=2, name="佐藤先生", parts=[PartType.C, PartType.D], is_instructor=True, overlap_priority=75),   # やや厳格
+        Player(id=3, name="鈴木先生", parts=[PartType.E, PartType.F], is_instructor=True, overlap_priority=50),   # 中程度
+        Player(id=4, name="高橋先生", parts=[PartType.G, PartType.H], is_instructor=True, overlap_priority=25),   # 緩い
+        Player(id=5, name="山田先生", parts=[PartType.I, PartType.A], is_instructor=True, overlap_priority=0),    # 制限なし
+        # 一般プレイヤー（複数パート所属、個人別優先度設定）
+        Player(id=6, name="佐々木さん", parts=[PartType.A, PartType.B], overlap_priority=100),  # 厳格
+        Player(id=7, name="松本さん", parts=[PartType.B, PartType.C], overlap_priority=50),   # 中程度
+        Player(id=8, name="井上さん", parts=[PartType.C, PartType.D], overlap_priority=0),    # 制限なし
+        Player(id=9, name="木村さん", parts=[PartType.D, PartType.E], overlap_priority=100),  # 厳格
+        Player(id=10, name="林さん", parts=[PartType.E, PartType.F], overlap_priority=25),    # 緩い
+        Player(id=11, name="清水さん", parts=[PartType.F, PartType.G], overlap_priority=75),   # やや厳格
+        Player(id=12, name="森さん", parts=[PartType.G, PartType.H], overlap_priority=0),     # 制限なし
+        Player(id=13, name="石川さん", parts=[PartType.H, PartType.I], overlap_priority=100), # 厳格
+        Player(id=14, name="田村さん", parts=[PartType.I, PartType.A], overlap_priority=50),   # 中程度
+        Player(id=15, name="山田さん", parts=[PartType.A, PartType.C], overlap_priority=75),   # やや厳格
+        Player(id=16, name="佐藤さん", parts=[PartType.B, PartType.D], overlap_priority=25),   # 緩い
+        Player(id=17, name="鈴木さん", parts=[PartType.C, PartType.E], overlap_priority=50),   # 中程度
+        Player(id=18, name="高橋さん", parts=[PartType.D, PartType.F], overlap_priority=100),  # 厳格
+        Player(id=19, name="伊藤さん", parts=[PartType.E, PartType.G], overlap_priority=0),    # 制限なし
+        Player(id=20, name="渡辺さん", parts=[PartType.F, PartType.H], overlap_priority=75),   # やや厳格
+        Player(id=21, name="中村さん", parts=[PartType.G, PartType.I], overlap_priority=25),   # 緩い
+        Player(id=22, name="小林さん", parts=[PartType.H, PartType.A], overlap_priority=50),   # 中程度
+        Player(id=23, name="加藤さん", parts=[PartType.I, PartType.B], overlap_priority=100),  # 厳格
     ]
     
     return SchedulingProblem(

@@ -26,6 +26,7 @@ class Player:
     name: str
     parts: List[PartType]  # 所属パート（複数可）
     is_instructor: bool = False  # 指導者かどうか
+    overlap_priority: int = 100  # 個人の重複優先度（0-100、0=制限なし）
 
 
 @dataclass
