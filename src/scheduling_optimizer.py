@@ -10,6 +10,7 @@ from .data_models import (
 )
 from .constraints import SchedulingConstraints
 from .objectives import SchedulingObjectives
+from .constants import SchedulingConfig, ProblemConfig
 
 
 class SchedulingOptimizer:
@@ -20,7 +21,7 @@ class SchedulingOptimizer:
         self.constraints = SchedulingConstraints(problem)
         self.objectives = None  # 制約設定後に初期化
         
-    def solve(self, time_limit_seconds: int = 30, equality_weight: int = 100) -> Optional[SchedulingSolution]:
+    def solve(self, time_limit_seconds: int = SchedulingConfig.DEFAULT_TIME_LIMIT, equality_weight: int = SchedulingConfig.DEFAULT_EQUALITY_WEIGHT) -> Optional[SchedulingSolution]:
         """スケジューリング問題を解く"""
         print("制約条件を設定中...")
         model = self.constraints.setup_all_constraints()

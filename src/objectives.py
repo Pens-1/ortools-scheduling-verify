@@ -4,6 +4,7 @@
 from typing import List, Optional
 from ortools.sat.python import cp_model
 from .data_models import SchedulingProblem, PartType
+from .constants import ConstraintLimits
 
 
 class SchedulingObjectives:
@@ -47,15 +48,15 @@ class SchedulingObjectives:
         # セッション数の分散を最小化
         if len(instructor_session_counts) > 1:
             # 分散を最小化（簡略化：最大値と最小値の差を最小化）
-            max_var = model.NewIntVar(0, 100, "max_sessions")
-            min_var = model.NewIntVar(0, 100, "min_sessions")
+            max_var = model.NewIntVar(0, ConstraintLimits.MAX_SESSIONS, "max_sessions")
+            min_var = model.NewIntVar(0, ConstraintLimits.MAX_SESSIONS, "min_sessions")
             
             for count in instructor_session_counts:
                 model.Add(count <= max_var)
                 model.Add(count >= min_var)
             
             # 重みを適用
-            weighted_difference = model.NewIntVar(0, 10000, "weighted_equality")
+            weighted_difference = model.NewIntVar(0, ConstraintLimits.MAX_WEIGHTED_EQUALITY, "weighted_equality")
             model.Add(weighted_difference == (max_var - min_var) * weight)
             return weighted_difference
         else:
@@ -70,8 +71,8 @@ class SchedulingObjectives:
             if player.is_instructor:
                 continue
                 
-            # 個人の優先度を取得（デフォルト100）
-            player_priority = getattr(player, 'overlap_priority', 100)
+            # 個人の優先度を取得（デフォルト50）
+            player_priority = getattr(player, 'overlap_priority', 50)
             
             for time_slot in self.problem.time_slots:
                 # そのプレイヤーの所属パートの練習数
@@ -87,11 +88,11 @@ class SchedulingObjectives:
                 
                 # 違反数 = max(0, 所属パート数 - 1)
                 if player_part_sessions:
-                    violation = model.NewIntVar(0, 10, f"player_violation_{player.id}_{time_slot.id}")
+                    violation = model.NewIntVar(0, ConstraintLimits.MAX_VIOLATIONS, f"player_violation_{player.id}_{time_slot.id}")
                     model.Add(violation >= sum(player_part_sessions) - 1)
                     
                     # 個人の優先度を適用
-                    weighted_violation = model.NewIntVar(0, 1000, f"weighted_violation_{player.id}_{time_slot.id}")
+                    weighted_violation = model.NewIntVar(0, ConstraintLimits.MAX_WEIGHTED_VIOLATIONS, f"weighted_violation_{player.id}_{time_slot.id}")
                     model.Add(weighted_violation == violation * player_priority)
                     player_violations.append(weighted_violation)
         
