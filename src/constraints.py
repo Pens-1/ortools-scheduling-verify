@@ -22,25 +22,27 @@ class SchedulingConstraints:
         for part in self.problem.parts:
             for room in self.problem.rooms:
                 for time_slot in self.problem.time_slots:
-                    for instructor in self.problem.get_instructors_by_part(part):
-                        var_name = f"session_{part.value}_{room.id}_{time_slot.id}_{instructor.id}"
-                        self.session_vars[(part, room.id, time_slot.id, instructor.id)] = \
-                            self.model.NewBoolVar(var_name)
+                    for instructor in self.problem.players:
+                        if instructor.is_instructor:
+                            var_name = f"session_{part.value}_{room.id}_{time_slot.id}_{instructor.id}"
+                            self.session_vars[(part, room.id, time_slot.id, instructor.id)] = \
+                                self.model.NewBoolVar(var_name)
     
     def add_basic_constraints(self):
         """基本的な制約条件を追加"""
-        # 1. 各パートは1日に1回だけ練習する（指導者がいる場合のみ）
+        # 1. 各パートは1日に1回だけ練習する（指導者は誰でもいい）
         for part in self.problem.parts:
-            # そのパートの全セッション（全時間コマ、全部屋）
+            # そのパートの全セッション（全時間コマ、全部屋、全指導者）
             all_sessions_for_part = []
             for room in self.problem.rooms:
                 for time_slot in self.problem.time_slots:
-                    for instructor in self.problem.get_instructors_by_part(part):
-                        all_sessions_for_part.append(
-                            self.session_vars[(part, room.id, time_slot.id, instructor.id)]
-                        )
+                    for instructor in self.problem.players:
+                        if instructor.is_instructor:
+                            all_sessions_for_part.append(
+                                self.session_vars[(part, room.id, time_slot.id, instructor.id)]
+                            )
             
-            # 指導者がいる場合のみ練習する（1日に1回だけ）
+            # 各パートは1日に1回だけ練習する
             if all_sessions_for_part:
                 self.model.Add(sum(all_sessions_for_part) == 1)
         
@@ -49,10 +51,11 @@ class SchedulingConstraints:
             for time_slot in self.problem.time_slots:
                 sessions_in_room = []
                 for part in self.problem.parts:
-                    for instructor in self.problem.get_instructors_by_part(part):
-                        sessions_in_room.append(
-                            self.session_vars[(part, room.id, time_slot.id, instructor.id)]
-                        )
+                    for instructor in self.problem.players:
+                        if instructor.is_instructor:
+                            sessions_in_room.append(
+                                self.session_vars[(part, room.id, time_slot.id, instructor.id)]
+                            )
                 if sessions_in_room:
                     self.model.Add(sum(sessions_in_room) <= 1)
     
@@ -84,6 +87,11 @@ class SchedulingConstraints:
                 # 同じ時間に指導数≤1（指導者は複数のパートを同時に指導できない）
                 if instructor_sessions:
                     self.model.Add(sum(instructor_sessions) <= 1)
+    
+    def add_player_constraints(self):
+        """プレイヤーに関する制約条件を追加"""
+        # プレイヤー制約はペナルティ制約として目的関数で処理するため、ここでは何もしない
+        pass
     
     def add_equality_constraints(self):
         """均等割り振りのための制約条件を追加"""
@@ -118,6 +126,7 @@ class SchedulingConstraints:
         self.create_variables()
         self.add_basic_constraints()
         self.add_instructor_constraints()
+        self.add_player_constraints()
         self.add_equality_constraints()
         
         return self.model

@@ -35,9 +35,9 @@ def main():
         print(f"{player.name} ({role}): {[p.value for p in player.parts]}")
     print()
     
-    # 最適化を実行
+    # 最適化を実行（練習のかぶり優先度: 100段階）
     optimizer = SchedulingOptimizer(problem)
-    solution = optimizer.solve(time_limit_seconds=60)
+    solution = optimizer.solve(time_limit_seconds=60, player_priority=100)
     
     if solution:
         optimizer.print_solution(solution)
