@@ -8,10 +8,11 @@ from .data_models import (
     SchedulingProblem, SchedulingSolution
 )
 from .constraints import SchedulingConstraints
+from .objectives import SchedulingObjectives
 
 __version__ = "0.1.0"
 __all__ = [
     "SchedulingOptimizer", "create_sample_problem",
     "PartType", "Player", "Room", "TimeSlot", "PracticeSession",
-    "SchedulingProblem", "SchedulingSolution", "SchedulingConstraints"
+    "SchedulingProblem", "SchedulingSolution", "SchedulingConstraints", "SchedulingObjectives"
 ]

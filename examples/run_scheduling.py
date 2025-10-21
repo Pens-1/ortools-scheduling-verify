@@ -32,12 +32,17 @@ def main():
     print("=== プレイヤー情報 ===")
     for player in problem.players:
         role = "指導者" if player.is_instructor else "プレイヤー"
-        print(f"{player.name} ({role}): {[p.value for p in player.parts]}")
+        if not player.is_instructor:
+            priority = getattr(player, 'overlap_priority', 100)
+            priority_text = f" (優先度: {priority})"
+        else:
+            priority_text = ""
+        print(f"{player.name} ({role}): {[p.value for p in player.parts]}{priority_text}")
     print()
     
-    # 最適化を実行
+    # 最適化を実行（個人別優先度設定済み、指導者均等割り振り重み: 100）
     optimizer = SchedulingOptimizer(problem)
-    solution = optimizer.solve(time_limit_seconds=60)
+    solution = optimizer.solve(time_limit_seconds=60, equality_weight=100)
     
     if solution:
         optimizer.print_solution(solution)
