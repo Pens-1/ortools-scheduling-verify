@@ -1,4 +1,4 @@
-# OR-Tools スケジューリング最適化システム
+# OR-Tools 最適化システム
 
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://python.org)
 [![OR-Tools](https://img.shields.io/badge/OR--Tools-Latest-green.svg)](https://developers.google.com/optimization)
@@ -6,10 +6,13 @@
 
 ## 概要
 
-このプロジェクトは、Google OR-Toolsを使用して練習室でのパート別練習スケジュールを最適化するシステムです。複数のパート、部屋、時間コマ、指導者、プレイヤーを考慮し、制約条件を満たしながら最適なスケジュールを自動生成します。
+このプロジェクトは、以下の2つの最適化機能を提供します：
+1. **練習室スケジューリング最適化**: Google OR-Toolsを使用してパート別練習スケジュールを自動生成
+2. **幾何学最適化**: scipyを使用して制約条件下で距離を最小化する幾何学問題を解く
 
 ## 主な機能
 
+### スケジューリング最適化
 - 🎯 **制約充足最適化**: 複雑な制約条件を満たすスケジュール生成
 - ⚖️ **均等負荷分散**: 指導者の負荷を均等に分散
 - 👥 **個人別優先度**: プレイヤーの重複優先度に基づく制約
@@ -17,20 +20,24 @@
 - ⏰ **時間コマ管理**: 効率的な時間割作成
 - 📊 **可視化**: 分かりやすいスケジュール表の表示
 
+### 幾何学最適化
+- 📐 **等距離条件最適化**: 複数の点から等距離にある点を求める
+- 🎨 **可視化機能**: matplotlibによる結果のグラフィカル表示
+- ⚡ **高速求解**: scipy.optimizeによる効率的な最適化
+
 ## システム構成
 
 ```
 ortools-scheduling-verify/
 ├── src/                          # ソースコード
 │   ├── __init__.py              # パッケージ初期化
-│   ├── scheduling_optimizer.py  # メイン最適化クラス
-│   ├── constraints.py           # 制約条件定義
-│   ├── objectives.py            # 目的関数定義
-│   ├── data_models.py           # データモデル定義
-│   └── constants.py             # 定数定義
+│   ├── geometry_optimizer.py   # 幾何学最適化クラス
+│   └── geometry_models.py       # 幾何学データモデル
 ├── examples/                     # 実行例
-│   └── run_scheduling.py        # サンプル実行
-├── 仕様書.md                     # 詳細仕様書
+│   └── solve_geometry.py       # 幾何学最適化実行
+├── requirements.txt              # 依存関係
+├── geometry_solution.png         # 最適化結果の可視化
+├── LICENSE                       # ライセンス
 └── README.md                     # このファイル
 ```
 
@@ -51,12 +58,12 @@ cd ortools-scheduling-verify
 
 2. **依存関係のインストール**
 ```bash
-pip install ortools
+pip install -r requirements.txt
 ```
 
 3. **動作確認**
 ```bash
-python examples/run_scheduling.py
+python examples/solve_geometry.py
 ```
 
 ## クイックスタート
@@ -64,17 +71,14 @@ python examples/run_scheduling.py
 ### 基本的な使用例
 
 ```python
-from src.scheduling_optimizer import SchedulingOptimizer, create_sample_problem
+from src.geometry_optimizer import GeometryOptimizer, create_geometry_problem
 
-# サンプル問題を作成
-problem = create_sample_problem()
+# 幾何学問題を作成
+problem = create_geometry_problem()
 
 # 最適化を実行
-optimizer = SchedulingOptimizer(problem)
-solution = optimizer.solve(
-    time_limit_seconds=60,    # 求解時間制限
-    equality_weight=100       # 均等性重み
-)
+optimizer = GeometryOptimizer(problem)
+solution = optimizer.solve()
 
 # 結果を表示
 if solution:
@@ -84,179 +88,82 @@ else:
 ```
 
 ### 実行例
-
 ```bash
-python examples/run_scheduling.py
+python examples/solve_geometry.py
 ```
 
 **出力例:**
 ```
-=== 練習表作成システム ===
-部屋数: 5, コマ数: 3, パート数: 9
+=== 幾何学最適化問題 ===
+問題:
+  原点(0,0)から点Aまでの距離 = D
+  点Aから点B(50,35)までの距離 = D
+  点Aから点C(x_C,50)までの距離 = D
+  ただし: x_A > 0, y_A > 0, x_C > 50
+  目的: Dを最小化
 
-=== プレイヤー情報 ===
-田中先生 (指導者): ['A', 'B']
-佐藤先生 (指導者): ['C', 'D']
-...
+幾何学最適化を実行中...
+解が見つかりました
 
-=== スケジュール結果 ===
-総セッション数: 9
-目的関数値: -0.00
+=== 幾何学最適化結果 ===
+最小距離 D: 43.156694
+点Aの座標: (7.50, 42.50)
+点Cの座標: (50.00, 50.00)
 最適解: はい
-求解時間: 0.15秒
+求解時間: 0.0053秒
 
-=== 指導者別セッション数 ===
-田中先生 (['A', 'B']): 2セッション
-佐藤先生 (['C', 'D']): 2セッション
-...
-
-=== スケジュール表 ===
-時間\部屋    練習室A    練習室B    練習室C    練習室D    練習室E
-1限目        A(田中先生)  C(佐藤先生)  E(鈴木先生)  G(高橋先生)  I(山田先生)
-2限目        B(田中先生)  D(佐藤先生)  F(鈴木先生)  H(高橋先生)  -
-3限目        -          -          -          -          -
+=== 制約条件の検証 ===
+すべての距離が等しい: True
+点Aのx座標 > 0: True
+点Aのy座標 > 0: True
+点Cのx座標 > 50: True
 ```
 
-## 設定パラメータ
+## 幾何学最適化の問題設定
 
-### 問題設定（constants.py）
+### 制約条件
 
-```python
-class ProblemConfig:
-    NUM_ROOMS = 5              # 部屋数
-    NUM_PARTS = 9              # パート数
-    NUM_INSTRUCTORS = 5        # 指導者数
-    NUM_GENERAL_PLAYERS = 18   # 一般プレイヤー数
-```
+1. **距離制約**: 原点、点B、点Cから点Aまでの距離がすべて等しい(= D)
+2. **境界条件**: 
+   - 点Aのx座標 > 0
+   - 点Aのy座標 > 0
+   - 点Cのx座標 > 50
 
-### スケジューリング設定
+### 最適化アルゴリズム
 
-```python
-class SchedulingConfig:
-    DEFAULT_TIME_LIMIT = 30        # デフォルト時間制限（秒）
-    DEFAULT_EQUALITY_WEIGHT = 100  # デフォルト均等性重み
-    DEFAULT_PRIORITY = 50          # デフォルト優先度
-```
-
-## 制約条件
-
-### 基本制約
-
-1. **パート制約**: 各パートは1日に1回だけ練習
-2. **部屋制約**: 各部屋は各時間コマに最大1つのセッション
-3. **指導者制約**: 各指導者は各時間コマに最大1つのセッションを指導
-
-### 均等割り振り制約
-
-- 各指導者の指導セッション数の差を最小化（最大1差まで）
-
-### プレイヤー制約
-
-- 個人の重複優先度（0-100）に基づく制約違反ペナルティ
-- 優先度が高いほど重複を避ける
-
-## 目的関数
-
-### 均等割り振り目的関数
-
-指導者のセッション数の分散を最小化し、負荷を均等に分散します。
-
-### プレイヤー制約違反ペナルティ
-
-個人の重複優先度に基づいて、制約違反にペナルティを課します。
+- **目的関数**: D(距離)を最小化
+- **制約**: 3つの等距離制約
+- **最適化手法**: scipy.optimize.minimize (SLSQP法)
 
 ## カスタマイズ
 
-### 独自問題の作成
+### カスタム幾何学問題の作成
 
 ```python
-from src.data_models import SchedulingProblem, Player, Room, TimeSlot, PartType
+from src.geometry_models import Point, GeometryProblem
+from src.geometry_optimizer import GeometryOptimizer
 
-# カスタム問題を作成
-players = [
-    Player(id=1, name="指導者A", parts=[PartType.A], is_instructor=True),
-    # ... 他のプレイヤー
-]
+# 問題を設定
+point_b = Point(x=50, y=35)
+point_c_y = 50.0
 
-rooms = [
-    Room(id=1, name="練習室1"),
-    # ... 他の部屋
-]
-
-time_slots = [
-    TimeSlot(id=1, name="1限目"),
-    # ... 他の時間コマ
-]
-
-problem = SchedulingProblem(
-    players=players,
-    rooms=rooms,
-    time_slots=time_slots,
-    parts=[PartType.A, PartType.B, PartType.C]
+problem = GeometryProblem(
+    point_b=point_b,
+    point_c_y=point_c_y
 )
+
+# 最適化を実行
+optimizer = GeometryOptimizer(problem)
+solution = optimizer.solve()
 ```
-
-### 制約条件の追加
-
-`src/constraints.py`の`SchedulingConstraints`クラスを拡張して、新しい制約条件を追加できます。
-
-### 目的関数の変更
-
-`src/objectives.py`の`SchedulingObjectives`クラスを修正して、目的関数をカスタマイズできます。
 
 ## トラブルシューティング
 
 ### 解が見つからない場合
 
-1. **制約条件を緩和**
-   - 時間制限を延長
-   - プレイヤーの重複優先度を下げる
-
-2. **問題設定を確認**
-   - 部屋数とパート数のバランス
-   - 指導者数とパート数の関係
-
-3. **デバッグ情報の確認**
-   ```python
-   # デバッグモードで実行
-   solution = optimizer.solve(time_limit_seconds=120)
-   ```
-
-### パフォーマンス問題
-
-1. **時間制限の調整**
-   ```python
-   solution = optimizer.solve(time_limit_seconds=60)
-   ```
-
-2. **問題規模の縮小**
-   - 部屋数やパート数を減らす
-   - プレイヤー数を調整
-
-## 開発者向け情報
-
-### アーキテクチャ
-
-- **SchedulingOptimizer**: メインの最適化クラス
-- **SchedulingConstraints**: 制約条件の管理
-- **SchedulingObjectives**: 目的関数の管理
-- **データモデル**: 問題と解のデータ構造
-
-### テスト
-
-```bash
-# 基本的な動作テスト
-python examples/run_scheduling.py
-
-# カスタム問題でのテスト
-python -c "
-from src.scheduling_optimizer import create_sample_problem, SchedulingOptimizer
-problem = create_sample_problem()
-optimizer = SchedulingOptimizer(problem)
-solution = optimizer.solve()
-print('テスト完了' if solution else 'テスト失敗')
-"
-```
+1. **初期値の調整**: 初期値を変更してみる
+2. **制約条件の確認**: 制約条件が適切か確認
+3. **求解時間の延長**: より多くの時間を割り当てる
 
 ### 貢献
 
@@ -271,24 +178,20 @@ print('テスト完了' if solution else 'テスト失敗')
 
 ## 更新履歴
 
-### v0.1.0 (2024年)
-- 初回リリース
-- 基本的なスケジューリング最適化機能
-- 制約条件と目的関数の実装
-- サンプル問題と実行例
+### v0.2.0 (2024年)
+- 幾何学最適化機能を追加
+- scipy.optimizeを使用した等距離点探索
+- matplotlibによる結果の可視化
+- 幾何学問題のサンプル実行例
 
 ## サポート
 
-問題や質問がございましたら、以下の方法でお問い合わせください：
-
-- GitHub Issues: バグ報告や機能要求
-- ドキュメント: [仕様書.md](仕様書.md)で詳細仕様を確認
+問題や質問がございましたら、GitHub Issuesでお問い合わせください。
 
 ## 関連リンク
 
-- [OR-Tools公式ドキュメント](https://developers.google.com/optimization)
-- [制約プログラミング入門](https://developers.google.com/optimization/cp)
-- [Python OR-Toolsチュートリアル](https://developers.google.com/optimization/introduction/python)
+- [scipy.optimizeドキュメント](https://docs.scipy.org/doc/scipy/reference/optimize.html)
+- [matplotlib公式ドキュメント](https://matplotlib.org/)
 
 ---
 
