@@ -18,16 +18,17 @@ class GeometryOptimizer:
         """幾何学最適化問題を解く"""
         print("幾何学最適化を実行中...")
         
-        # 変数: [x_A, y_A, x_C, D]
+        # 変数: [x_a, y_a, x_b, x_c, d]
         # 初期値の設定
-        initial_values = np.array([30.0, 30.0, 60.0, 50.0])
+        initial_values = np.array([400, 400, 700, 700, 500])
         
-        # 境界条件: x_A > 0, y_A > 0, x_C > 50, D > 0
+        # 境界条件: 100 < x_a < 700, 0 < y_a, 770 < x_b < 830, 710 < x_c < 890, 0 < d
         bounds = [
-            (1e-6, None),  # x_A
-            (1e-6, None),  # y_A
-            (50 + 1e-6, None),  # x_C
-            (1e-6, None)  # D
+            (1e-6 + 100, 1e-6 + 700),  # x_a
+            (1e-6, None),  # y_a
+            (1e-6 + 770, 1e-6 + 830),  # x_b
+            (1e-6 + 710, 1e-6 + 890),  # x_c
+            (1e-6, None)  # d
         ]
         
         # 等式制約
@@ -50,7 +51,7 @@ class GeometryOptimizer:
         
         # SLSQP法で最適化
         result = minimize(
-            fun=lambda vars: vars[3],  # Dを最小化
+            fun=lambda vars: vars[4],  # dを最小化
             x0=initial_values,
             method='SLSQP',
             bounds=bounds,
@@ -64,16 +65,17 @@ class GeometryOptimizer:
             print(f"解が見つかりました")
             print(f"求解時間: {solve_time:.4f}秒")
             print(f"最適化ステータス: {result.message}")
-            
-            x_a, y_a, x_c, d = result.x
-            
+
+            x_a, y_a, x_b, x_c, d = result.x
+
             # is_optimalの判定: success かつ 収束ステータスが良好
             # SLSQP法では、result.success=True で収束成功を意味する
             is_optimal = result.success and result.status == 0
-            
+
             return GeometrySolution(
                 d=d,
                 point_a=Point(x=x_a, y=y_a),
+                point_b=Point(x=x_b, y=self.problem.point_b_y),
                 point_c=Point(x=x_c, y=self.problem.point_c_y),
                 is_optimal=is_optimal,
                 solve_time_seconds=solve_time
@@ -84,23 +86,23 @@ class GeometryOptimizer:
     
     def _constraint_origin_to_a(self, vars):
         """原点(0,0)から点Aまでの距離 = D"""
-        x_a, y_a, x_c, d = vars
+        x_a, y_a, x_b, x_c, d = vars
         return np.sqrt(x_a**2 + y_a**2) - d
-    
+
     def _constraint_a_to_b(self, vars):
         """点Aから点Bまでの距離 = D"""
-        x_a, y_a, x_c, d = vars
-        dx = x_a - self.problem.point_b.x
-        dy = y_a - self.problem.point_b.y
+        x_a, y_a, x_b, x_c, d = vars
+        dx = x_a - x_b
+        dy = y_a - self.problem.point_b_y
         return np.sqrt(dx**2 + dy**2) - d
-    
+
     def _constraint_a_to_c(self, vars):
         """点Aから点Cまでの距離 = D"""
-        x_a, y_a, x_c, d = vars
+        x_a, y_a, x_b, x_c, d = vars
         dx = x_a - x_c
         dy = y_a - self.problem.point_c_y
         return np.sqrt(dx**2 + dy**2) - d
-    
+
     def print_solution(self, solution: GeometrySolution):
         """解を分かりやすく表示"""
         if not solution:
@@ -108,7 +110,7 @@ class GeometryOptimizer:
             return
         
         print(f"\n=== 幾何学最適化結果 ===")
-        print(f"最小距離 D: {solution.d:.6f}")
+        print(f"最小距離 d: {solution.d:.6f}")
         print(f"点Aの座標: ({solution.point_a.x:.6f}, {solution.point_a.y:.6f})")
         print(f"点Cの座標: ({solution.point_c.x:.6f}, {solution.point_c.y:.6f})")
         print(f"最適解: {'はい' if solution.is_optimal else 'いいえ'}")
@@ -121,18 +123,19 @@ class GeometryOptimizer:
         print(f"A-B間の距離: {verification['a_to_b_distance']:.6f}")
         print(f"A-C間の距離: {verification['a_to_c_distance']:.6f}")
         print(f"すべての距離が等しい: {verification['all_distances_equal']}")
-        print(f"点Aのx座標 > 0: {verification['point_a_x_positive']}")
-        print(f"点Aのy座標 > 0: {verification['point_a_y_positive']}")
-        print(f"点Cのx座標 > 50: {verification['point_c_x_greater_than_50']}")
+        print(f"100 < 点Aのx座標 < 700: {verification['point_x_a_within_range']}")
+        print(f"点Aのy座標 > 0: {verification['point_y_a_within_range']}")
+        print(f"770 < 点Bのx座標 < 830: {verification['point_x_b_within_range']}")
+        print(f"710 < 点Cのx座標 < 890: {verification['point_x_c_within_range']}")
 
 
 def create_geometry_problem() -> GeometryProblem:
     """サンプル幾何学問題を作成"""
-    point_b = Point(x=50, y=35)
-    point_c_y = 50.0
+    point_b_y = 290
+    point_c_y = 540
     
     return GeometryProblem(
-        point_b=point_b,
+        point_b_y=point_b_y,
         point_c_y=point_c_y
     )
 
