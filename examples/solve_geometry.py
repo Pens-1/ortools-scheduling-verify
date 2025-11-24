@@ -7,6 +7,8 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+plt.rcParams['font.family'] = 'Noto Sans JP'
+
 # プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -25,20 +27,20 @@ def visualize_solution(problem, solution):
     # 点をプロット
     origin = (0, 0)
     point_a = (solution.point_a.x, solution.point_a.y)
-    point_b = (problem.point_b.x, problem.point_b.y)
+    point_b = (solution.point_b.x, solution.point_b.y)
     point_c = (solution.point_c.x, solution.point_c.y)
     
     # 各点をプロット
-    ax.plot(0, 0, 'ko', markersize=10, label='原点 (0,0)')
+    ax.plot(origin[0], origin[1], 'ko', markersize=10, label='原点 (0,0)')
     ax.plot(point_a[0], point_a[1], 'ro', markersize=10, label=f'点A ({solution.point_a.x:.2f}, {solution.point_a.y:.2f})')
-    ax.plot(point_b[0], point_b[1], 'go', markersize=10, label=f'点B ({point_b[0]}, {point_b[1]})')
+    ax.plot(point_b[0], point_b[1], 'go', markersize=10, label=f'点B ({solution.point_b.x:.2f}, {solution.point_b.y:.2f})')
     ax.plot(point_c[0], point_c[1], 'mo', markersize=10, label=f'点C ({solution.point_c.x:.2f}, {solution.point_c.y:.2f})')
     
     # 円を描画（距離Dの可視化）
     from matplotlib.patches import Circle
     
     # 原点を中心とした円
-    circle1 = Circle((0, 0), solution.d, fill=False, linestyle='--', color='blue', linewidth=1.5)
+    circle1 = Circle(origin, solution.d, fill=False, linestyle='--', color='blue', linewidth=1.5)
     ax.add_patch(circle1)
     
     # 点Bを中心とした円
@@ -48,6 +50,21 @@ def visualize_solution(problem, solution):
     # 点Cを中心とした円
     circle3 = Circle(point_c, solution.d, fill=False, linestyle='--', color='purple', linewidth=1.5)
     ax.add_patch(circle3)
+
+    # 点Aを中心とした円（動作範囲）
+    circle4 = Circle(point_a, solution.d, fill=False, linestyle='--', color='red', linewidth=1.5)
+    ax.add_patch(circle4)
+
+    # 四角を描画（機体の他の要素を可視化）
+    from matplotlib.patches import Rectangle
+
+    # 足回り
+    rect1 = Rectangle((100, -100), 600, 100, angle=0, fill=True, color='orange', alpha=0.5, label='足回り')
+    ax.add_patch(rect1)
+
+    # 櫓
+    rect2 = Rectangle((565, 0), 90, 290, angle=0, fill=True, color='cyan', alpha=0.5, label='櫓')
+    ax.add_patch(rect2)
     
     # 線を描画
     ax.plot([0, point_a[0]], [0, point_a[1]], 'b-', linewidth=2, label=f'原点-A ({solution.d:.2f})')
@@ -68,7 +85,7 @@ def visualize_solution(problem, solution):
     ax.set_ylim(-margin, max(point_b[1], point_c[1], solution.point_c.y) + margin)
     
     plt.tight_layout()
-    
+
     # PNGとして保存
     output_file = 'geometry_solution.png'
     plt.savefig(output_file, dpi=150)
@@ -84,14 +101,14 @@ def main():
     print("  原点(0,0)から点Aまでの距離 = D")
     print("  点Aから点B(50,35)までの距離 = D")
     print("  点Aから点C(x_C,50)までの距離 = D")
-    print("  ただし: x_A > 0, y_A > 0, x_C > 50")
-    print("  目的: Dを最小化")
+    print("  ただし: 100 < x_A < 700, y_A > 0, 770 < x_B < 830, 710 < x_C < 890")
+    print("  目的: dを最小化")
     print()
-    
+
     # 問題を作成
     problem = create_geometry_problem()
-    
-    print(f"点B: ({problem.point_b.x}, {problem.point_b.y})")
+
+    print(f"点Bのy座標: {problem.point_b_y}")
     print(f"点Cのy座標: {problem.point_c_y}")
     print()
     
